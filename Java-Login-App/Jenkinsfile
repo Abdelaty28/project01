@@ -33,8 +33,8 @@ pipeline {
         stage('Build Application') {
             steps {
                 dir("${APP_DIR}") {
-                    sh 'chmod +x mvnw'
-                    sh './mvnw clean package -DskipTests'
+                sh 'chmod +x mvnw'
+                sh 'MAVEN_OPTS="-Xmx512m" ./mvnw clean package -DskipTests -B'
                 }
             }
         }
