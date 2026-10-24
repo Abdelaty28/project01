@@ -45,6 +45,20 @@ pipeline {
                                  fingerprint: true
             }
         }
+        stage('Test SSH Connection') {
+            steps {
+                sshagent(credentials: ['app-server-ssh']) {
+                sh '''
+                set -eu
+                ssh -o BatchMode=yes \
+                    -o StrictHostKeyChecking=accept-new \
+                    -o ConnectTimeout=10 \
+                    ubuntu@192.168.11.83 \
+                    "hostname && whoami"
+                '''
+                }
+            }
+        }
     }
 
     post {
