@@ -72,6 +72,26 @@ pipeline {
                 }
             }
         }
+        
+        stage('Deploy WAR') {
+            steps {
+                sshagent(credentials: ['app-server-ssh']) {
+                sh '''
+                set -eu
+
+                WAR_FILE="Java-Login-App/target/dptweb-1.0.war"
+                test -f "$WAR_FILE"
+
+                scp -o BatchMode=yes \
+                    "$WAR_FILE" \
+                    ubuntu@192.168.11.83:/opt/java-login-app/dptweb-1.0.war.new
+
+                ssh -o BatchMode=yes ubuntu@192.168.11.83 \
+                    'mv /opt/java-login-app/dptweb-1.0.war.new /opt/java-login-app/dptweb-1.0.war'
+                '''
+                }
+            }
+        }
     }
 
     post {
