@@ -92,6 +92,35 @@ pipeline {
                 }
             }
         }
+        stage('Restart and Verify Application') {
+            steps {
+                sshagent(credentials: ['app-server-ssh']) {
+                sh '''
+                set -eu
+
+                ssh -o BatchMode=yes \
+                -o StrictHostKeyChecking=accept-new \
+                ubuntu@192.168.11.83 'bash -s' <<'REMOTE'
+                set -eu
+                
+                sudo -n systemctl restart java-login-app
+                
+                for i in $(seq 1 12); do
+                    if curl -sS -o /dev/null http://127.0.0.1:8080/; then
+                        echo "Application is responding on port 8080"
+                        exit 0
+                    fi
+                
+                    sleep 5
+                done
+                
+                sudo systemctl status --no-pager java-login-app
+                exit 1
+                REMOTE
+                '''
+                }
+            }
+        }
     }
 
     post {
