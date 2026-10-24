@@ -1,0 +1,62 @@
+pipeline {
+agent any
+
+```
+options {
+    timestamps()
+}
+
+environment {
+    APP_DIR = 'Java-Login-App'
+}
+
+stages {
+    stage('Checkout') {
+        steps {
+            echo 'Source code has been checked out by Jenkins.'
+        }
+    }
+
+    stage('Check Java and Maven Wrapper') {
+        steps {
+            dir("${APP_DIR}") {
+                sh '''
+                    echo "Checking Java version..."
+                    java -version
+
+                    echo "Checking Maven Wrapper..."
+                    ls -l mvnw
+                '''
+            }
+        }
+    }
+
+    stage('Build Application') {
+        steps {
+            dir("${APP_DIR}") {
+                sh 'chmod +x mvnw'
+                sh './mvnw clean package -DskipTests'
+            }
+        }
+    }
+
+    stage('Archive WAR Artifact') {
+        steps {
+            archiveArtifacts artifacts: 'Java-Login-App/target/*.war',
+                             fingerprint: true
+        }
+    }
+}
+
+post {
+    success {
+        echo 'Build completed successfully!'
+    }
+
+    failure {
+        echo 'Build failed. Check Console Output.'
+    }
+}
+```
+
+}
