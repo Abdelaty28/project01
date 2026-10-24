@@ -59,6 +59,19 @@ pipeline {
                 }
             }
         }
+        stage('Prepare Deployment Directory') {
+            steps {
+                sshagent(credentials: ['app-server-ssh']) {
+                sh '''
+                set -eu
+                ssh -o BatchMode=yes \
+                ubuntu@192.168.11.83 \
+                'sudo mkdir -p /opt/java-login-app &&
+                 sudo chown ubuntu:ubuntu /opt/java-login-app'
+                '''
+                }
+            }
+        }
     }
 
     post {
