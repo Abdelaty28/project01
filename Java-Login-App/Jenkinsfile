@@ -45,6 +45,7 @@ pipeline {
                 dir("${APP_DIR}") {
                 withSonarQubeEnv('SonarCloud') {
                 sh '''
+                    export SONAR_SCANNER_JAVA_OPTS="-Xmx1024m"
                     ./mvnw org.sonarsource.scanner.maven:sonar-maven-plugin:5.0.0.4389:sonar \
                     -Dsonar.projectKey=Abdelaty28_project01 \
                     -Dsonar.organization=abdelaty28 \
