@@ -10,6 +10,7 @@ pipeline {
     }
 
     stages {
+
         stage('Checkout') {
             steps {
                 echo 'Source code has been checked out by Jenkins.'
@@ -33,8 +34,33 @@ pipeline {
         stage('Build Application') {
             steps {
                 dir("${APP_DIR}") {
-                sh 'chmod +x mvnw'
-                sh 'MAVEN_OPTS="-Xmx512m" ./mvnw clean package -DskipTests -B'
+                    sh 'chmod +x mvnw'
+                    sh 'MAVEN_OPTS="-Xmx512m" ./mvnw clean package -DskipTests -B'
+                }
+            }
+        }
+
+        // NEW STAGE: SonarCloud Analysis
+        stage('SonarCloud Analysis') {
+            steps {
+                dir("${APP_DIR}") {
+                    withSonarQubeEnv('SonarCloud') {
+                        sh '''
+                            ./mvnw sonar:sonar \
+                            -Dsonar.projectKey=Abdelaty28_project01 \
+                            -Dsonar.organization=abdelaty28 \
+                            -Dsonar.host.url=https://sonarcloud.io
+                        '''
+                    }
+                }
+            }
+        }
+
+        // NEW STAGE: Quality Gate
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
                 }
             }
         }
@@ -45,79 +71,81 @@ pipeline {
                                  fingerprint: true
             }
         }
+
         stage('Test SSH Connection') {
             steps {
                 sshagent(credentials: ['app-server-ssh']) {
-                sh '''
-                set -eu
-                ssh -o BatchMode=yes \
-                    -o StrictHostKeyChecking=accept-new \
-                    -o ConnectTimeout=10 \
-                    ubuntu@192.168.11.83 \
-                    "hostname && whoami"
-                '''
+                    sh '''
+                        set -eu
+                        ssh -o BatchMode=yes \
+                            -o StrictHostKeyChecking=accept-new \
+                            -o ConnectTimeout=10 \
+                            ubuntu@192.168.11.83 \
+                            "hostname && whoami"
+                    '''
                 }
             }
         }
+
         stage('Prepare Deployment Directory') {
             steps {
                 sshagent(credentials: ['app-server-ssh']) {
-                sh '''
-                set -eu
-                ssh -o BatchMode=yes \
-                ubuntu@192.168.11.83 \
-                'sudo mkdir -p /opt/java-login-app &&
-                 sudo chown ubuntu:ubuntu /opt/java-login-app'
-                '''
+                    sh '''
+                        set -eu
+                        ssh -o BatchMode=yes \
+                        ubuntu@192.168.11.83 \
+                        'sudo mkdir -p /opt/java-login-app &&
+                         sudo chown ubuntu:ubuntu /opt/java-login-app'
+                    '''
                 }
             }
         }
-        
+
         stage('Deploy WAR') {
             steps {
                 sshagent(credentials: ['app-server-ssh']) {
-                sh '''
-                set -eu
+                    sh '''
+                        set -eu
 
-                WAR_FILE="Java-Login-App/target/dptweb-1.0.war"
-                test -f "$WAR_FILE"
+                        WAR_FILE="Java-Login-App/target/dptweb-1.0.war"
+                        test -f "$WAR_FILE"
 
-                scp -o BatchMode=yes \
-                    "$WAR_FILE" \
-                    ubuntu@192.168.11.83:/opt/java-login-app/dptweb-1.0.war.new
+                        scp -o BatchMode=yes \
+                            "$WAR_FILE" \
+                            ubuntu@192.168.11.83:/opt/java-login-app/dptweb-1.0.war.new
 
-                ssh -o BatchMode=yes ubuntu@192.168.11.83 \
-                    'mv /opt/java-login-app/dptweb-1.0.war.new /opt/java-login-app/dptweb-1.0.war'
-                '''
+                        ssh -o BatchMode=yes ubuntu@192.168.11.83 \
+                            'mv /opt/java-login-app/dptweb-1.0.war.new /opt/java-login-app/dptweb-1.0.war'
+                    '''
                 }
             }
         }
+
         stage('Restart and Verify Application') {
             steps {
                 sshagent(credentials: ['app-server-ssh']) {
-                sh '''
-                set -eu
+                    sh '''
+                        set -eu
 
-                ssh -o BatchMode=yes \
-                -o StrictHostKeyChecking=accept-new \
-                ubuntu@192.168.11.83 'bash -s' <<'REMOTE'
-                set -eu
-                
-                sudo -n systemctl restart java-login-app
-                
-                for i in $(seq 1 12); do
-                    if curl -sS -o /dev/null http://127.0.0.1:8080/; then
-                        echo "Application is responding on port 8080"
-                        exit 0
-                    fi
-                
-                    sleep 5
-                done
-                
-                sudo systemctl status --no-pager java-login-app
-                exit 1
-                REMOTE
-                '''
+                        ssh -o StrictHostKeyChecking=accept-new \
+                        ubuntu@192.168.11.83 'bash -s' <<'REMOTE'
+                        set -eu
+
+                        sudo -n systemctl restart java-login-app
+
+                        for i in $(seq 1 12); do
+                            if curl -sS -o /dev/null http://127.0.0.1:8080/; then
+                                echo "Application is responding on port 8080"
+                                exit 0
+                            fi
+
+                            sleep 5
+                        done
+
+                        sudo systemctl status --no-pager java-login-app
+                        exit 1
+                        REMOTE
+                    '''
                 }
             }
         }
