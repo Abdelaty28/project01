@@ -71,6 +71,24 @@ pipeline {
                                  fingerprint: true
             }
         }
+        stage('Upload Artifact to JFrog') {
+            steps {
+                dir("${APP_DIR}") {
+                    withCredentials([usernamePassword(
+                        credentialsId: 'jfrog',
+                        usernameVariable: 'JFROG_USER',
+                        passwordVariable: 'JFROG_TOKEN'
+                    )]) {
+                        sh '''
+                            ./mvnw deploy \
+                            -DskipTests \
+                            -s settings.xml \
+                            -B
+                        '''
+                    }
+                }
+            }
+        }
 
         stage('Test SSH Connection') {
             steps {
