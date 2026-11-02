@@ -12,7 +12,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                echo 'Source code has been checked out by Jenkins.'
+                echo 'Source code has been checked out by Jenkins Server.'
             }
         }
 
