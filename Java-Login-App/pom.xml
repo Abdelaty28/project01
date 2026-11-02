@@ -69,7 +69,7 @@
 	</build>
 <distributionManagement>
     <repository>
-        <id>jfrog-releases</id>
+        <id>jfrog</id>
         <name>java-login-maven-local</name>
         <url>https://trial0lf39s.jfrog.io/artifactory/api/maven/java-login-maven-local</url>
     </repository>
