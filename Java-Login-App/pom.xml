@@ -71,8 +71,13 @@
     <repository>
         <id>jfrog</id>
         <name>java-login-maven-local</name>
-        <url>https://trial0lf39s.jfrog.io/artifactory/api/maven/java-login-maven-local</url>
+        <url>https://trial0lf39s.jfrog.io/artifactory/java-login-maven-local</url>
     </repository>
+    <snapshotRepository>
+        <id>jfrog</id>
+        <name>java-login-maven-local</name>
+        <url>https://trial0lf39s.jfrog.io/artifactory/java-login-maven-local</url>
+    </snapshotRepository>
 </distributionManagement>
 
 
